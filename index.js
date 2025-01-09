@@ -1,36 +1,47 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-
-// Import routes
 import signupRoutes from './api/signup.js';
 import signinRoutes from './api/signin.js';
 import protectedRoutes from './api/protected.js';
+import compression from 'compression';
 
-// Load environment variables
 dotenv.config();
 
-// Initialize express app
 const app = express();
 
-// Set up PORT from environment variables or use 3000 as default
-const PORT = process.env.PORT || 3000;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((error) => console.error('MongoDB connection error:', error));
+// MongoDB connection (optimized for serverless)
+const connectToDatabase = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return; // Already connected
+  }
+
+  await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+};
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next(); // Proceed to the next middleware or route handler
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    res.status(500).json({ message: 'Database connection failed' });
+  }
+});
 
 // Middleware for parsing JSON
 app.use(express.json());
+
+// Use compression middleware for response optimization
+app.use(compression());
 
 // Use the imported route handlers
 app.use('/api/signup', signupRoutes);
 app.use('/api/signin', signinRoutes);
 app.use('/api/protected', protectedRoutes);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Export the app for serverless environments (like Vercel)
+export default app;
