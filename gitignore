@@ -1,0 +1,19 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Vercel deployment cache
+.vercel/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings (e.g., VS Code)
+.vscode/
+.idea/
